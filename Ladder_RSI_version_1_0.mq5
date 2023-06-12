@@ -52,6 +52,6 @@ void OnDeinit(const int reason)
 //+------------------------------------------------------------------+
 void OnTick()
 {
-//---
+  prog.OnTick();
   
 }
