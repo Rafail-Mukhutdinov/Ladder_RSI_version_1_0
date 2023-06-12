@@ -23,6 +23,8 @@ void InitLogger()
   CLogger::SetLogFileLimitType(LOG_FILE_LIMIT_TYPE_ONE_DAY);
 }
 
+
+CProgram prog;
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
@@ -32,7 +34,9 @@ int OnInit()
   //---
   CLogger::Add(LOG_LEVEL_INFO,"");
   CLogger::Add(LOG_LEVEL_INFO,"---------- OnInit() -----------");
-  
+
+  prog.OnInit();                                                      // Метод заполняет параметры 
+
   return(INIT_SUCCEEDED);
 }
 //+------------------------------------------------------------------+
@@ -51,22 +55,3 @@ void OnTick()
 //---
   
 }
-//+------------------------------------------------------------------+
-//| Trade function                                                   |
-//+------------------------------------------------------------------+
-void OnTrade()
-{
-//---
-  
-}
-//+------------------------------------------------------------------+
-//| TradeTransaction function                                        |
-//+------------------------------------------------------------------+
-void OnTradeTransaction(const MqlTradeTransaction& trans,
-                        const MqlTradeRequest& request,
-                        const MqlTradeResult& result)
-{
-//---
-  
-}
-//+------------------------------------------------------------------+
