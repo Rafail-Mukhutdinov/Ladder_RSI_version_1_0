@@ -16,6 +16,7 @@ private:
         CStandard_metod prog_standart;
         Value_Indicator prog_value_indicator;
         CTrade          prog_trade;
+        Position_Value  prog_position;
 
         int             m_handler_RSI; //! Переменная для хранения переменной хендлера индикатора RSI
 
@@ -28,8 +29,8 @@ public:
         void            OnInit();
         // Метод обрабатывает логику по тикам
         void            OnTick();
-        // Метод находит количество открытых позиций и возвращает разворотное колличество лотов для переворота позиции
-        double          Lot_Sum();
+        // Метод получает по открытой позиции
+        void            Info_Position();
 
 };
 
@@ -50,7 +51,8 @@ void CProgram::OnTick()
         // Если у нас новый бар
         if (prog_standart.New_Bar())
         {
-
+                // Получаем значение нашей открытой позиции
+                Info_Position(); 
                 LOG(LOG_LEVEL_INFO, "У нас новый бар");
                 // Заполняем массив значениями индикатора
                 FillArrayFromBuffer(iRSIBuffer, m_handler_RSI, 100);
@@ -65,10 +67,19 @@ void CProgram::OnTick()
                                 // если наше сохраненое значение опустилось ниже нашего сохраненого значения
                                 if ((NormalizeDouble(iRSIBuffer[2], 2) < prog_value_indicator.min_value) || (prog_value_indicator.min_value == 0))
                                 {
+
                                         prog_value_indicator.min_value = NormalizeDouble(iRSIBuffer[2], 2);
                                         prog_value_indicator.max_value = 0;
-                                        LOG(LOG_LEVEL_DEBUG, "Сигнал на покупку");
-                                        prog_trade.Buy(0.1, Symbol());
+                                        // Если у нас позиция продажи а сигнал на покупку
+                                        if(prog_position.type == POSITION_TYPE_SELL || prog_position.volume == 0)
+                                        {
+                                                LOG(LOG_LEVEL_DEBUG, "Сигнал на покупку");
+                                                prog_trade.Buy(prog_position.volume + 0.1, Symbol());
+                                        }else
+                                        {
+                                                prog_trade.Buy(0.1, Symbol());
+                                        }
+
                                 }
                         }
                 }
@@ -77,13 +88,28 @@ void CProgram::OnTick()
                 if (NormalizeDouble(iRSIBuffer[1], 2) > 70)
                 {
                         LOG(LOG_LEVEL_INFO, "Значение индикатора стало больше 70");
+                        // Если второе значение индикатора больше первого на верхнем уровне 
                         if (NormalizeDouble(iRSIBuffer[2], 2) > NormalizeDouble(iRSIBuffer[1], 2))
                         {
-                                if((NormalizeDouble(iRSIBuffer[2], 2) > prog_value_indicator.max_value) || (prog_value_indicator.max_value == 0)){
-                                   prog_value_indicator.max_value = NormalizeDouble(iRSIBuffer[2], 2);
-                                   prog_value_indicator.min_value = 0;
-                                   LOG(LOG_LEVEL_DEBUG, "Сигнал на продажу"); 
-                                   prog_trade.Sell(0.1, Symbol());    
+                                // Если второе значение больше нашего до этого сохраненого значения индикатора или наше значение индикатора равно нулю         
+                                if((NormalizeDouble(iRSIBuffer[2], 2) > prog_value_indicator.max_value) || (prog_value_indicator.max_value == 0))
+                                {
+    
+                                   prog_value_indicator.max_value = NormalizeDouble(iRSIBuffer[2], 2);                  // Присваеваем нашему верхнее значение индикатора максимальное значение
+                                   prog_value_indicator.min_value = 0;                                                  // Обнуляем наше минимальное значение        
+
+                                   // Если у нас сигнал на продажу а позиция покупок
+                                   if(prog_position.type == POSITION_TYPE_BUY || prog_position.volume == 0)
+                                   {
+                                        LOG(LOG_LEVEL_DEBUG, "Сигнал на продажу"); 
+                                        // Разворачиваем нашу позицию
+                                        prog_trade.Sell(prog_position.volume + 0.1, Symbol()); 
+                                   }else
+                                   {
+                                        // Появился сигнал на продажу увеличиваем позицию
+                                        prog_trade.Sell(0.1, Symbol());          
+                                   }
+   
                                 }
                         }
                 }
@@ -91,9 +117,28 @@ void CProgram::OnTick()
 }
 
 
-double CProgram::Lot_Sum()
+void CProgram::Info_Position()
 {
-        
+   if(PositionSelect(Symbol())) 
+     { 
+        prog_position.volume           = PositionGetDouble(POSITION_VOLUME);                                             // Получаем объем                
+        prog_position.price         = NormalizeDouble(PositionGetDouble(POSITION_PRICE_OPEN), Digits());          // Получаем цену позиции
+        prog_position.ticket        = PositionGetInteger(POSITION_TICKET);
+        prog_position.type          = (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE); 
+        /*
+        LOG(LOG_LEVEL_INFO, "Тикет: " + (string)(_PositionStruct.ticket) +
+                            " Позиция: " + EnumToString(_PositionStruct.type) + 
+                            " Цена: " + (string)_PositionStruct.prise + 
+                            " Лот: " + (string)_PositionStruct.lot + 
+                            " Стоплос: " + (string)_PositionStruct.stoploss +
+                            " Тейкпрофит: " + (string)_PositionStruct.takeprofit);*/
+                      
+     }else{
+        prog_position.volume        = 0;                                            // Получаем объем                
+        prog_position.price         = 0;                                         // Получаем цену позиции
+        prog_position.ticket        = 0;
+        prog_position.type          = 0; 
+   }
 }
 
 //+------------------------------------------------------------------+

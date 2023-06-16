@@ -1,6 +1,6 @@
 #property version   "1.00"
-#property description "Советник работает по принципу лесенки только "
-#property description "лесенку строит по сигналам индикатора RSI "
+#property description "Советник работает  "
+#property description " по сигналам индикатора RSI "
 
 #include <My_library\Logger.mqh>
 #include "Program.mqh"
